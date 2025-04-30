@@ -16,6 +16,10 @@
     <!-- 配置文件 -->
     <script type="module" src="config.js"></script>
     <style>
+        /* 添加 v-cloak 样式 */
+        [v-cloak] {
+            display: none;
+        }
         .countdown-tag {
             background: linear-gradient(45deg, #ff6b6b, #ff4757);
             padding: 4px 8px;
@@ -173,10 +177,47 @@
             transform: translateY(-2px);
             box-shadow: 0 4px 12px rgba(239, 68, 68, 0.2);
         }
+        /* 骨架屏样式 */
+        .skeleton {
+            background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+            background-size: 200% 100%;
+            animation: loading 1.5s infinite;
+            border-radius: 4px;
+        }
+        @keyframes loading {
+            0% { background-position: 200% 0; }
+            100% { background-position: -200% 0; }
+        }
+        .skeleton-image {
+            height: 400px;
+            width: 100%;
+            margin-bottom: 20px;
+        }
+        .skeleton-title {
+            height: 24px;
+            width: 80%;
+            margin-bottom: 12px;
+        }
+        .skeleton-text {
+            height: 16px;
+            width: 100%;
+            margin-bottom: 8px;
+        }
+        .skeleton-price {
+            height: 32px;
+            width: 40%;
+            margin: 20px 0;
+        }
+        .skeleton-group {
+            height: 100px;
+            width: 100%;
+            margin-bottom: 12px;
+            border-radius: 8px;
+        }
     </style>
 </head>
 <body class="bg-gray-100">
-    <div id="app" class="min-h-screen">
+    <div id="app" class="min-h-screen" v-cloak>
         <!-- 顶部导航栏 -->
         <nav class="bg-white shadow-lg fixed top-0 left-0 right-0 z-50">
             <div class="container mx-auto px-4 py-4">
@@ -189,8 +230,24 @@
             </div>
         </nav>
 
+        <!-- 骨架屏 -->
+        <div class="pt-16" v-if="loading">
+            <div class="skeleton skeleton-image"></div>
+            <div class="bg-white p-4">
+                <div class="skeleton skeleton-title"></div>
+                <div class="skeleton skeleton-text"></div>
+                <div class="skeleton skeleton-text" style="width: 60%"></div>
+                <div class="skeleton skeleton-price"></div>
+                <div class="mt-6">
+                    <div class="skeleton skeleton-group"></div>
+                    <div class="skeleton skeleton-group"></div>
+                    <div class="skeleton skeleton-group"></div>
+                </div>
+            </div>
+        </div>
+
         <!-- 商品详情 -->
-        <div class="pt-16" v-if="product">
+        <div class="pt-16" v-else-if="product">
             <!-- 商品轮播图 -->
             <div class="product-swiper">
                 <div class="swiper productSwiper">
@@ -336,6 +393,7 @@
         createApp({
             setup() {
                 const product = ref(null)
+                const loading = ref(true)
                 const countdown = ref(7200) // 2小时倒计时
                 let timer = null
                 let countdownTimer = null
@@ -387,6 +445,7 @@
                 // 获取商品详情
                 const fetchProductDetail = async (goodsId, source, channel) => {
                     try {
+                        loading.value = true
                         const userId = sessionStorage.getItem('username')
                         if (!userId) {
                             alert('请先登录')
@@ -433,6 +492,8 @@
                     } catch (error) {
                         console.error('获取商品详情失败：', error)
                         alert('获取商品信息失败，请稍后重试')
+                    } finally {
+                        loading.value = false
                     }
                 }
 
@@ -636,6 +697,7 @@
 
                 return {
                     product,
+                    loading,
                     activeGroups,
                     countdown,
                     formatTime,
