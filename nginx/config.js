@@ -1,6 +1,6 @@
 const config = {
     // API基础地址
-    baseURL: 'https://group.hjcwzx.top/api/',
+    baseURL: 'https://group.hjcwzx.top/',
 
     // API接口路径
     apis: {
