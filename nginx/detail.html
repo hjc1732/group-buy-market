@@ -1,0 +1,656 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>商品详情 - 拼团商城</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Vue 3 -->
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <!-- Swiper轮播 -->
+    <link rel="stylesheet" href="https://unpkg.com/swiper/swiper-bundle.min.css" />
+    <script src="https://unpkg.com/swiper/swiper-bundle.min.js"></script>
+    <!-- 图标库 -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <!-- 配置文件 -->
+    <script type="module" src="config.js"></script>
+    <style>
+        .countdown-tag {
+            background: linear-gradient(45deg, #ff6b6b, #ff4757);
+            padding: 4px 8px;
+            border-radius: 4px;
+            color: white;
+            font-size: 14px;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+        }
+        .swiper {
+            width: 100%;
+            height: 100%;
+        }
+        .swiper-slide {
+            text-align: center;
+            background: #fff;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        .swiper-slide img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        .swiper-pagination-bullet-active {
+            background: #ff2b2b;
+        }
+        .product-swiper {
+            height: 400px;
+            width: 100%;
+            position: relative;
+        }
+        .product-swiper .swiper-pagination {
+            bottom: 20px;
+        }
+        .product-swiper .swiper-pagination-bullet {
+            width: 8px;
+            height: 8px;
+            background: rgba(255, 255, 255, 0.8);
+            opacity: 0.5;
+        }
+        .product-swiper .swiper-pagination-bullet-active {
+            opacity: 1;
+            background: #fff;
+        }
+        .team-item {
+            background: #fff;
+            border-radius: 8px;
+            padding: 12px;
+            margin-bottom: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+        }
+        .team-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 2px solid #ff4757;
+        }
+        .team-progress {
+            height: 4px;
+            background: #f0f0f0;
+            border-radius: 2px;
+            margin: 8px 0;
+            overflow: hidden;
+        }
+        .team-progress-bar {
+            height: 100%;
+            background: linear-gradient(90deg, #ff6b6b, #ff4757);
+            border-radius: 2px;
+            transition: width 0.3s ease;
+        }
+        .team-status {
+            font-size: 12px;
+            color: #666;
+        }
+        .team-countdown {
+            font-size: 14px;
+            color: #ff4757;
+            font-weight: bold;
+            animation: pulse 1s infinite;
+        }
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+        .team-urgent {
+            animation: pulse 1s infinite;
+        }
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(0, 0, 0, 0.5);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+        .modal-content {
+            background: white;
+            padding: 24px;
+            border-radius: 12px;
+            width: 80%;
+            max-width: 400px;
+            text-align: center;
+            position: relative;
+        }
+        .modal-close {
+            position: absolute;
+            top: 12px;
+            right: 12px;
+            width: 24px;
+            height: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            background: #f3f4f6;
+            color: #6b7280;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        .modal-close:hover {
+            background: #e5e7eb;
+            color: #4b5563;
+        }
+        .modal-title {
+            font-size: 18px;
+            font-weight: bold;
+            margin-bottom: 16px;
+        }
+        .modal-price {
+            font-size: 24px;
+            color: #ef4444;
+            font-weight: bold;
+            margin-bottom: 24px;
+        }
+        .modal-button {
+            background: #ef4444;
+            color: white;
+            padding: 12px 24px;
+            border-radius: 24px;
+            font-size: 16px;
+            font-weight: bold;
+            width: 100%;
+            transition: all 0.3s ease;
+        }
+        .modal-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(239, 68, 68, 0.2);
+        }
+    </style>
+</head>
+<body class="bg-gray-100">
+    <div id="app" class="min-h-screen">
+        <!-- 顶部导航栏 -->
+        <nav class="bg-white shadow-lg fixed top-0 left-0 right-0 z-50">
+            <div class="container mx-auto px-4 py-4">
+                <div class="flex justify-between items-center">
+                    <div class="text-xl font-bold text-gray-800 flex items-center">
+                        <i @click="goBack" class="fas fa-arrow-left mr-3 cursor-pointer"></i>
+                        <span>商品详情</span>
+                    </div>
+                </div>
+            </div>
+        </nav>
+
+        <!-- 商品详情 -->
+        <div class="pt-16" v-if="product">
+            <!-- 商品轮播图 -->
+            <div class="product-swiper">
+                <div class="swiper productSwiper">
+                    <div class="swiper-wrapper">
+                        <div class="swiper-slide" v-for="(img, index) in product.detailImages" :key="index">
+                            <img :src="img" :alt="product.name + '图片' + (index + 1)">
+                        </div>
+                    </div>
+                    <div class="swiper-pagination"></div>
+                    <div class="swiper-button-next"></div>
+                    <div class="swiper-button-prev"></div>
+                </div>
+            </div>
+
+            <!-- 商品信息 -->
+            <div class="bg-white p-4">
+                <div class="flex justify-between items-start mb-4">
+                    <div>
+                        <h1 class="text-xl font-bold mb-2">{{ product.name }}</h1>
+                        <p class="text-gray-600">{{ product.description }}</p>
+                    </div>
+                    <!-- <button @click="shareProduct" class="bg-red-100 text-red-600 px-3 py-1 rounded-full text-sm">
+                        分享
+                    </button> -->
+                </div>
+
+                <!-- 活动信息 -->
+                <!-- <div class="bg-blue-50 p-3 rounded-lg mb-4">
+                    <div class="text-blue-600 font-semibold mb-1">{{ product.activityName }}</div>
+                    <div class="text-sm text-gray-600">活动ID: {{ product.activityId }}</div>
+                </div> -->
+
+                <!-- 价格信息 -->
+                <div class="bg-red-50 p-4 rounded-lg mb-4">
+                    <div class="flex items-baseline">
+                        <span class="text-3xl font-bold text-red-600">¥{{ product.groupPrice }}</span>
+                        <span class="ml-2 text-gray-500 line-through">¥{{ product.originalPrice }}</span>
+                        <span class="ml-2 text-green-600">立减¥{{ product.deductionPrice }}</span>
+                    </div>
+                    <div class="mt-2 text-red-600 text-sm">
+                        <i class="fas fa-users mr-1"></i>
+                        <span>{{ product.targetCount }}人成团 · 已有{{ product.soldCount }}人购买</span>
+                    </div>
+                </div>
+
+                <!-- 正在拼团列表 -->
+                <div class="mb-4">
+                    <h2 class="text-lg font-bold mb-3">正在拼团</h2>
+                    <div v-if="activeGroups.length === 0" class="empty-state bg-gray-50 p-6 rounded-lg text-center">
+                        <div class="text-gray-400 mb-3">
+                            <i class="fas fa-users text-4xl"></i>
+                        </div>
+                        <div class="text-gray-500 mb-4">暂无正在进行的拼团</div>
+                        <button @click="goToOrder('group')" 
+                                class="bg-red-600 text-white px-6 py-2 rounded-full text-sm hover:bg-red-700 transition-colors">
+                            发起拼团
+                        </button>
+                    </div>
+                    <div v-else>
+                        <div v-for="group in activeGroups" :key="group.id" class="team-item">
+                            <div class="flex items-center justify-between">
+                                <div class="flex items-center">
+                                    <img src="https://img1.baidu.com/it/u=2359334135,348852321&fm=253&fmt=auto&app=120&f=JPEG?w=500&h=999" 
+                                         class="team-avatar" 
+                                         :class="{ 'team-urgent': group.validTimeCountdown !== '已结束' }">
+                                    <div class="ml-3">
+                                        <div class="font-semibold">{{ formatUsername(group.userId) }}</div>
+                                        <div class="text-sm text-gray-500">订单号: {{ group.outTradeNo }}</div>
+                                    </div>
+                                </div>
+                                <div class="text-right">
+                                    <div v-if="group.validTimeCountdown !== '已结束'" class="countdown-tag">
+                                        <i class="fas fa-clock"></i>
+                                        {{ group.validTimeCountdown }}
+                                    </div>
+                                    <div class="text-gray-500 text-sm" v-else>已结束</div>
+                                </div>
+                            </div>
+                            
+                            <div class="team-progress">
+                                <div class="team-progress-bar" 
+                                     :style="{ width: (group.completeCount / group.targetCount * 100) + '%' }">
+                                </div>
+                            </div>
+                            
+                            <div class="flex justify-between items-center mt-2">
+                                <div class="team-status">
+                                    还差{{ group.targetCount - group.completeCount }}人成团
+                                </div>
+                                <button @click="joinGroup(group.id)" 
+                                        class="bg-red-600 text-white px-4 py-2 rounded-full text-sm"
+                                        :disabled="group.validTimeCountdown === '已结束'"
+                                        :class="{ 'bg-gray-400 cursor-not-allowed': group.validTimeCountdown === '已结束' }">
+                                    {{ group.validTimeCountdown === '已结束' ? '已结束' : '去拼团' }}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 商品详情 -->
+                <div class="mb-20">
+                    <h2 class="text-lg font-bold mb-3">商品详情</h2>
+                    <div class="space-y-4">
+                        <img v-for="(img, index) in product.detailImages"
+                             :key="index"
+                             :src="img"
+                             :alt="product.name + '详情图' + (index + 1)"
+                             class="w-full rounded-lg">
+                    </div>
+                </div>
+            </div>
+
+            <!-- 底部购买栏 -->
+            <div class="fixed bottom-0 left-0 right-0 bg-white border-t p-3 flex space-x-3">
+                <button @click="goToOrder('single')" class="flex-1 border border-red-600 text-red-600 py-2 rounded-full">
+                    单独购买 ¥{{ product.originalPrice }}
+                </button>
+                <button @click="goToOrder('group')" class="flex-1 bg-red-600 text-white py-2 rounded-full">
+                    发起拼团 ¥{{ product.groupPrice }}
+                </button>
+            </div>
+
+            <!-- 支付弹窗 -->
+            <div v-if="showModal" class="modal-overlay">
+                <div class="modal-content">
+                    <div class="modal-close" @click="showModal = false">
+                        <i class="fas fa-times"></i>
+                    </div>
+                    <div class="modal-title">确认支付</div>
+                    <div class="modal-price">¥{{ modalType === 'join' || modalType === 'group' ? product.groupPrice : product.originalPrice }}</div>
+                    <div class="text-sm text-gray-500 mb-4">订单号：{{ currentOutTradeNo }}</div>
+                    <button class="modal-button" @click="handlePaymentComplete">已支付</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        import config from './config.js'
+        const { createApp, ref, onMounted, onUnmounted } = Vue
+
+        createApp({
+            setup() {
+                const product = ref(null)
+                const countdown = ref(7200) // 2小时倒计时
+                let timer = null
+                let countdownTimer = null
+                const showModal = ref(false)
+                const modalType = ref('')
+                const modalGroupId = ref(null)
+                const currentOutTradeNo = ref('')
+
+                const activeGroups = ref([
+                    {
+                        id: 1,
+                        userId: "ces001",
+                        outTradeNo: "10001",
+                        targetCount: 2,
+                        completeCount: 1,
+                        validTimeCountdown: "00:15:00"
+                    }
+                ])
+
+                // 更新倒计时
+                const updateCountdown = () => {
+                    let hasEnded = false
+                    activeGroups.value.forEach(group => {
+                        if (group.validTimeCountdown !== '已结束') {
+                            const [hours, minutes, seconds] = group.validTimeCountdown.split(':').map(Number)
+                            let totalSeconds = hours * 3600 + minutes * 60 + seconds
+                            
+                            if (totalSeconds > 0) {
+                                totalSeconds--
+                                const newHours = Math.floor(totalSeconds / 3600)
+                                const newMinutes = Math.floor((totalSeconds % 3600) / 60)
+                                const newSeconds = totalSeconds % 60
+                                group.validTimeCountdown = `${newHours.toString().padStart(2, '0')}:${newMinutes.toString().padStart(2, '0')}:${newSeconds.toString().padStart(2, '0')}`
+                            } else {
+                                group.validTimeCountdown = '已结束'
+                                hasEnded = true
+                            }
+                        }
+                    })
+                    
+                    // 如果有拼团结束，刷新页面
+                    if (hasEnded) {
+                        setTimeout(() => {
+                            window.location.reload()
+                        }, 10) // 延迟1秒刷新，让用户看到结束状态
+                    }
+                }
+
+                // 获取商品详情
+                const fetchProductDetail = async (goodsId, source, channel) => {
+                    try {
+                        const userId = sessionStorage.getItem('username')
+                        if (!userId) {
+                            alert('请先登录')
+                            window.location.href = 'login.html'
+                            return
+                        }
+
+                        const params = `userId=${userId}&source=${source}&channel=${channel}&goodsId=${goodsId}`
+                        const response = await fetch(config.getApiUrl('activityDetail', params))
+                        const result = await response.json()
+
+                        if (result.code === '0000' && result.data) {
+                            const goods = result.data.goods
+                            product.value = {
+                                id: goods.goodsId,
+                                name: goods.goodsName,
+                                description: goods.goodsDesc,
+                                image: goods.goodsPic[0],
+                                detailImages: goods.goodsPic,
+                                originalPrice: goods.originalPrice,
+                                groupPrice: goods.payPrice,
+                                soldCount: result.data.teamStatistic.allTeamUserCount,
+                                activityId: goods.activityId,
+                                activityName: goods.activityName,
+                                source: goods.source,
+                                channel: goods.channel,
+                                deductionPrice: goods.deductionPrice,
+                                targetCount: goods.targetCount
+                            }
+                            
+                            // 更新拼团统计信息
+                            activeGroups.value = result.data.teamList.map(team => ({
+                                id: team.teamId,
+                                userId: team.userId,
+                                outTradeNo: team.outTradeNo,
+                                targetCount: team.targetCount,
+                                completeCount: team.completeCount,
+                                validTimeCountdown: team.validTimeCountdown,
+                                validEndTime: team.validEndTime
+                            }))
+                        } else {
+                            alert('获取商品信息失败：' + result.info)
+                        }
+                    } catch (error) {
+                        console.error('获取商品详情失败：', error)
+                        alert('获取商品信息失败，请稍后重试')
+                    }
+                }
+
+                const startCountdown = () => {
+                    timer = setInterval(() => {
+                        if (countdown.value > 0) {
+                            countdown.value--
+                        } else {
+                            clearInterval(timer)
+                        }
+                    }, 1000)
+                }
+
+                const formatTime = (seconds) => {
+                    const hours = Math.floor(seconds / 3600)
+                    const minutes = Math.floor((seconds % 3600) / 60)
+                    const secs = seconds % 60
+                    return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`
+                }
+
+                const goBack = () => {
+                    window.history.back()
+                }
+
+                const shareProduct = () => {
+                    alert('分享功能开发中...')
+                }
+
+                const showPaymentModal = async (type, groupId = null) => {
+                    try {
+                        // 获取URL参数
+                        const urlParams = new URLSearchParams(window.location.search)
+                        const source = urlParams.get('source')
+                        const channel = urlParams.get('channel')
+                        const userId = sessionStorage.getItem('username')
+                        const goodsId = urlParams.get('id')
+
+                        // 生成订单号
+                        currentOutTradeNo.value = 'GBM' + Date.now().toString().slice(-5)
+
+                        // 调用锁定订单接口
+                        const response = await fetch(config.getApiUrl('lockOrder'), {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify({
+                                userId,
+                                teamId: groupId,
+                                activityId: product.value.activityId,
+                                source,
+                                channel,
+                                goodsId,
+                                outTradeNo: currentOutTradeNo.value
+                            })
+                        })
+
+                        const result = await response.json()
+                        if (result.code === '0000') {
+                            modalType.value = type
+                            modalGroupId.value = groupId
+                            showModal.value = true
+                        } else {
+                            alert('锁定订单失败：' + result.info)
+                        }
+                    } catch (error) {
+                        console.error('锁定订单请求失败：', error)
+                        alert('锁定订单失败，请稍后重试')
+                    }
+                }
+
+                const joinGroup = (groupId) => {
+                    // 检查登录状态
+                    const userType = sessionStorage.getItem('userType')
+                    if (!userType) {
+                        // 保存当前页面URL到localStorage，以便登录后返回
+                        localStorage.setItem('redirectUrl', window.location.href)
+                        window.location.href = 'login.html'
+                        return
+                    }
+                    showPaymentModal('join', groupId)
+                }
+
+                const goToOrder = (type) => {
+                    // 检查登录状态
+                    const userType = sessionStorage.getItem('userType')
+                    if (!userType) {
+                        // 保存当前页面URL到localStorage，以便登录后返回
+                        localStorage.setItem('redirectUrl', window.location.href)
+                        window.location.href = 'login.html'
+                        return
+                    }
+                    if (type === 'single') {
+                        // 单独购买直接显示弹窗
+                        modalType.value = type
+                        showModal.value = true
+                    } else {
+                        // 拼团需要调用锁定接口
+                        showPaymentModal(type)
+                    }
+                }
+
+                const handlePaymentComplete = async () => {
+                    if (modalType.value === 'single') {
+                        // 单独购买直接关闭弹窗并刷新
+                        showModal.value = false
+                        window.location.reload()
+                        return
+                    }
+
+                    try {
+                        // 获取URL参数
+                        const urlParams = new URLSearchParams(window.location.search)
+                        const source = urlParams.get('source')
+                        const channel = urlParams.get('channel')
+                        const userId = sessionStorage.getItem('username')
+
+                        // 调用结算接口
+                        const response = await fetch(config.getApiUrl('settlementOrder'), {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify({
+                                source,
+                                channel,
+                                userId,
+                                outTradeNo: currentOutTradeNo.value,
+                                outTradeTime: new Date().toISOString()
+                            })
+                        })
+
+                        const result = await response.json()
+                        if (result.code === '0000') {
+                            showModal.value = false
+                            window.location.reload()
+                        } else {
+                            alert('支付失败：' + result.info)
+                        }
+                    } catch (error) {
+                        console.error('支付请求失败：', error)
+                        alert('支付失败，请稍后重试')
+                    }
+                }
+
+                const formatUsername = (username) => {
+                    if (username.length > 8) {
+                        return username.substring(0, 8) + '...'
+                    }
+                    return username
+                }
+
+                onMounted(() => {
+                    // 获取URL参数
+                    const urlParams = new URLSearchParams(window.location.search)
+                    const productId = urlParams.get('id')
+                    const source = urlParams.get('source')
+                    const channel = urlParams.get('channel')
+
+                    // 获取商品信息
+                    if (productId && source && channel) {
+                        fetchProductDetail(productId, source, channel)
+                    } else {
+                        alert('参数不完整，请检查URL')
+                    }
+
+                    // 初始化轮播图
+                    new Swiper(".productSwiper", {
+                        pagination: {
+                            el: ".swiper-pagination",
+                            dynamicBullets: true,
+                            clickable: true
+                        },
+                        loop: true,
+                        autoplay: {
+                            delay: 3000,
+                            disableOnInteraction: false,
+                        },
+                        effect: "fade",
+                        fadeEffect: {
+                            crossFade: true
+                        },
+                        navigation: {
+                            nextEl: ".swiper-button-next",
+                            prevEl: ".swiper-button-prev",
+                        }
+                    })
+
+                    // 启动倒计时更新
+                    countdownTimer = setInterval(updateCountdown, 1000)
+                })
+
+                onUnmounted(() => {
+                    if (timer) {
+                        clearInterval(timer)
+                    }
+                    if (countdownTimer) {
+                        clearInterval(countdownTimer)
+                    }
+                })
+
+                return {
+                    product,
+                    activeGroups,
+                    countdown,
+                    formatTime,
+                    goBack,
+                    shareProduct,
+                    joinGroup,
+                    goToOrder,
+                    showModal,
+                    modalType,
+                    currentOutTradeNo,
+                    handlePaymentComplete,
+                    formatUsername
+                }
+            }
+        }).mount('#app')
+    </script>
+</body>
+</html>
